@@ -39,8 +39,36 @@ namespace DeadCellsStarter
             return;
 
             found:
-            Console.WriteLine("Waiting for DeadCells to exit...");
-            deadCellsProcess.WaitForExit();
+            //Search XboxIdp
+            Console.WriteLine("Found DeadCells! Waiting 20 seconds for XboxIdentityProvider...");
+            Process xboxIdp = null;
+            start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+            while (DateTimeOffset.Now.ToUnixTimeMilliseconds() - start < 20000)
+            {
+                //Try finding process for 20 seconds
+                foreach (var process in Process.GetProcessesByName("XboxIdp"))
+                {
+                    Console.WriteLine("Found XboxIdentityProvider: " + process.ProcessName);
+                    xboxIdp = process;
+                    goto foundId;
+                }
+            }
+
+            Console.WriteLine("Cannot find XboxIdentityProvider.");
+            goto wait;
+
+            foundId:
+            Console.WriteLine("Successfully killed XboxIdentityProvider");
+            xboxIdp.Kill();
+
+            wait:
+            if (!deadCellsProcess.HasExited)
+            {
+                Console.WriteLine("Waiting for DeadCells to exit...");
+                deadCellsProcess.WaitForExit();
+            }
+
             Console.WriteLine("DeadCells exited. Shutting down...");
         }
     }
