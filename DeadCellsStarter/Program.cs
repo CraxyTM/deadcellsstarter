@@ -34,42 +34,40 @@ namespace DeadCellsStarter
                 }
             }
 
+            //Not found
             Console.WriteLine("DeadCells didn't start. Exiting in 5 seconds...");
             Thread.Sleep(5000);
             return;
 
+            //Found
             found:
-            //Search XboxIdp
-            Console.WriteLine("Found DeadCells! Waiting 20 seconds for XboxIdentityProvider...");
-            Process xboxIdp = null;
-            start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            Console.WriteLine("Found DeadCells!");
 
-            while (DateTimeOffset.Now.ToUnixTimeMilliseconds() - start < 20000)
-            {
-                //Try finding process for 20 seconds
-                foreach (var process in Process.GetProcessesByName("XboxIdp"))
-                {
-                    Console.WriteLine("Found XboxIdentityProvider: " + process.ProcessName);
-                    xboxIdp = process;
-                    goto foundId;
-                }
-            }
-
-            Console.WriteLine("Cannot find XboxIdentityProvider.");
-            goto wait;
-
-            foundId:
-            Console.WriteLine("Successfully killed XboxIdentityProvider");
-            xboxIdp.Kill();
-
-            wait:
             if (!deadCellsProcess.HasExited)
             {
                 Console.WriteLine("Waiting for DeadCells to exit...");
+
+                var xboxIdpKillerThread = new Thread(() =>
+                {
+                    while (true)
+                    {
+                        foreach (var process in Process.GetProcessesByName("XboxIdp"))
+                        {
+                            Console.WriteLine("Found XboxIdp: " + process.ProcessName);
+                            process.Kill();
+                            Console.WriteLine("Killed XboxIdp!");
+                        }
+
+                        Thread.Sleep(100);
+                    }
+                });
+                xboxIdpKillerThread.Start();
+
                 deadCellsProcess.WaitForExit();
             }
 
             Console.WriteLine("DeadCells exited. Shutting down...");
+            Environment.Exit(0);
         }
     }
 }
